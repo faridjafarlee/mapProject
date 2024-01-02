@@ -24,12 +24,10 @@
         }
 
       function areArraysEqual(arr1, arr2) {
-        // Check if lengths are the same
         if (arr1.length !== arr2.length) {
           return false;
         }
 
-        // Check if each subarray in arr1 is present in arr2
         for (let subarr1 of arr1) {
           if (!arr2.some(subarr2 => subarraysAreEqual(subarr1, subarr2))) {
             return false;
@@ -77,8 +75,6 @@
                 colorButtons[currColor].style.border = currColor == color ? '2px solid #789' : '2px solid #fff';
             }
 
-            // Retrieves the current options from the drawing manager and replaces the
-            // stroke or fill color as appropriate.
             let polygonOptions = drawingManager.get('polygonOptions');
             polygonOptions.fillColor = color;
             drawingManager.set('polygonOptions', polygonOptions);
@@ -175,8 +171,6 @@
         };
 
         $scope.drawReferenceLine = function () {
-            //alert('Draw reference line.');
-
             if (referenceLine) {
                 referenceLine.setMap(null); // Remove existing reference line
             }
@@ -321,9 +315,6 @@
         }
 
         function offsetToLat(offset) {
-            // Преобразование метров в широту
-            // 1 градус широты примерно равен 111 км
-            // Таким образом, 100 метров эквивалентны примерно 0.0009 градуса
             return offset / 111000;
         }
 
@@ -344,10 +335,7 @@
             const startPoint = rectangleBounds.getSouthWest();
             const endPoint = new google.maps.LatLng(startPoint.lat(), rectangleBounds.getNorthEast().lng());
 
-            // newPoint -> parallel xetlerin bashlama noqtesi
             let newPoint = rectangleBounds.getSouthWest();
-
-            // distance mesafenin deyishme istiqameti + olanda soldan saga, - olanda sagdan sole
 
             const heading = google.maps.geometry.spherical.computeHeading(referenceLine.getPath().getAt(0), referenceLine.getPath().getAt(1));
             console.log('heading', heading);
@@ -361,7 +349,6 @@
 
             let movingType = 'x';
 
-            // heading-den asili olaraq hereket elemek
             if ((heading >= 0 && heading <= 45) || (heading <= -135 && heading >= -180)) {
                 if (heading <= -135 && heading >= -180) {
                     referenceLine.setPath([referenceLine.getPath().getAt(1), referenceLine.getPath().getAt(0)]);
@@ -376,7 +363,7 @@
                 }
             }
 
-            if ((heading > 45 && heading <= 90) || (heading <= -90 && heading > -135)) { // istiqamet /
+            if ((heading > 45 && heading <= 90) || (heading <= -90 && heading > -135)) {
                 if (heading <= -90 && heading > -135) {
                     referenceLine.setPath([referenceLine.getPath().getAt(1), referenceLine.getPath().getAt(0)]);
                 }
@@ -384,7 +371,7 @@
                 movingType = 'y';
             }
 
-            if ((heading > 90 && heading < 135) || (heading < -45 && heading > -90)) { // istiqamet \
+            if ((heading > 90 && heading < 135) || (heading < -45 && heading > -90)) {
                 if (heading < -45 && heading > -90) {
                     referenceLine.setPath([referenceLine.getPath().getAt(1), referenceLine.getPath().getAt(0)]);
                 }
@@ -539,11 +526,6 @@
             });
 
             markers[polygon.content].push(marker);
-
-            // Опционально: добавляем обработчик события клика на маркер
-            marker.addListener('click', () => {
-                console.log(`Вы нажали на маркер ${number}`);
-            });
         }
 
 
@@ -614,8 +596,6 @@
                 draggable: false,
                 editable: false
             };
-            // Creates a drawing manager attached to the map that allows the user to draw
-            // markers, lines, and shapes.
             drawingManager = new google.maps.drawing.DrawingManager({
                 // drawingMode: google.maps.drawing.OverlayType.POLYGON,
                 drawingControlOptions: {
@@ -628,7 +608,6 @@
             searchInput = document.getElementById('location-search');
             const searchBox = new google.maps.places.SearchBox(searchInput);
 
-            // Обработка изменений в поле поиска
             searchBox.addListener('places_changed', function () {
                 const places = searchBox.getPlaces();
 
@@ -636,7 +615,6 @@
                     return;
                 }
 
-                // Центрирование карты на выбранном месте
                 const bounds = new google.maps.LatLngBounds();
                 places.forEach(function (place) {
                     if (place.geometry.viewport) {
@@ -655,11 +633,8 @@
                       return;
                     }
 
-                    // Switch back to non-drawing mode after drawing a shape.
                     drawingManager.setDrawingMode(null);
 
-                    // Add an event listener that selects the newly-drawn shape when the user
-                    // mouses down on it.
                     let newShape = event.overlay;
                     newShape.type = event.type;
                     newShape.content = uuidv4();
@@ -669,7 +644,6 @@
                     setSelection(newShape);
 
                     if (event.type === google.maps.drawing.OverlayType.POLYGON) {
-                        // TODO: Check intersection with other main polygons
                         const newPolygonCords = [];
                         newShape.getPath().g.forEach(coord => {
                           newPolygonCords.push([coord.lng(), coord.lat()]);
@@ -759,13 +733,13 @@
                     const path = event.overlay.getPath();
 
                     const area = google.maps.geometry.spherical.computeArea(path);
-                    const formattedArea = (area / 1e6).toFixed(2) + ' sq km'; // Convert to square kilometers
+                    const formattedArea = (area / 1e6).toFixed(2) + ' sq km';
 
                     markers[newShape.content] = [];
 
                     for (let i = 0; i < path.getLength(); i++) {
                         const segmentStart = path.getAt(i);
-                        const segmentEnd = path.getAt((i + 1) % path.getLength()); // Use modulo to handle the last point
+                        const segmentEnd = path.getAt((i + 1) % path.getLength());
                         const centerLatLng = new google.maps.LatLng(
                             (segmentStart.lat() + segmentEnd.lat()) / 2,
                             (segmentStart.lng() + segmentEnd.lng()) / 2
@@ -787,8 +761,6 @@
                 }
             });
 
-            // Clear the current selection when the drawing mode is changed, or when the
-            // map is clicked.
             google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection);
             google.maps.event.addListener(map, 'click', clearSelection);
             google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
@@ -832,9 +804,3 @@
         google.maps.event.addDomListener(window, 'load', initialize);
     });
 })(myApp);
-
-/*
-Copyright 2023 Google LLC. All Rights Reserved.
-Use of this source code is governed by an MIT-style license that
-can be found in the LICENSE file at http://angular.io/license
-*/
