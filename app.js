@@ -532,7 +532,7 @@
       const marker = new google.maps.Marker({
         position: center,
         map: map,
-        icon: 'https://maps.google.com/mapfiles/kml/shapes/info-i_maps.png',
+        icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
         label: number.toString(),
       });
 
@@ -762,7 +762,7 @@
             const marker = new google.maps.Marker({
               position: centerLatLng,
               map: map,
-              icon: 'https://maps.google.com/mapfiles/kml/shapes/info-i_maps.png',
+              icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
               label: {
                 text: formattedDistance,
                 color: 'white',
