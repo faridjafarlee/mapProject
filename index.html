@@ -7,7 +7,7 @@
     <title>Maps test task</title>
 
     <!-- Angular -->
-<!--    <script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/angular.min.js"></script>-->
+    <!--    <script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/angular.min.js"></script>-->
     <script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/angular.js"></script>
     <script defer src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
     <script defer src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-animate.min.js"></script>
@@ -18,13 +18,14 @@
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
 
     <!-- Turf -->
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
 
     <!-- Google Maps -->
     <script type="text/javascript"
-            src="http://maps.google.com/maps/api/js?key='YOUR-KEY-HERE'&v=weekly&libraries=drawing,geometry,places"></script>
+            src="http://maps.google.com/maps/api/js?key=YOUR-KEY_HERE&v=weekly&libraries=drawing,geometry,places"></script>
 
     <style type="text/css">
         #map, html, body {
@@ -79,14 +80,14 @@
             <h1>Map test task</h1>
         </div>
     </div>
-<!--    <div class="row" style="padding-bottom: 20px;">-->
-<!--        <div class="col-xs-12 col-md-12 col-lg-12">-->
-<!--            <div>Colors for drawing</div>-->
-<!--        </div>-->
-<!--        <div class="col-xs-12 col-md-12 col-lg-12">-->
-<!--            <div id="color-palette" style="margin: 0 auto; padding-left: 47%"></div>-->
-<!--        </div>-->
-<!--    </div>-->
+    <!--    <div class="row" style="padding-bottom: 20px;">-->
+    <!--        <div class="col-xs-12 col-md-12 col-lg-12">-->
+    <!--            <div>Colors for drawing</div>-->
+    <!--        </div>-->
+    <!--        <div class="col-xs-12 col-md-12 col-lg-12">-->
+    <!--            <div id="color-palette" style="margin: 0 auto; padding-left: 47%"></div>-->
+    <!--        </div>-->
+    <!--    </div>-->
     <div class="row" style="padding-bottom: 10px;">
         <div class="offset-xs-2 col-xs-2 offset-md-2 col-md-2 offset-lg-2 col-lg-2">
             <button id="delete-button" type="button" ng-show="polygon" class="btn btn-danger">Delete Selected Shape</button>
@@ -109,38 +110,46 @@
                     <h4>Polygons:</h4>
                 </div>
                 <div class="col-xs-12" ng-repeat="polygon in polygons">
-                    <div class="card">
-                        <h5 class="card-header">ID: {{ polygon.id }}</h5>
+                    <div class="card text-bg-secondary">
+                        <h5 class="card-header d-flex justify-content-between align-items-center">
+                            ID: {{ polygon.id }}
+                        </h5>
                         <div class="card-body">
                             <p class="card-text">
                                 AREA: {{ polygon.area }}<br/>
                                 PERIMETER: {{ polygon.perimeter }}<br/>
                             </p>
                             <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
-                            <a class="btn btn-primary" ng-if="polygon.innerPolygons.length && !polygon.showInnerPolygons" ng-click="showInnerPolygons(polygon)">Show inner polygons</a>
+                            <a class="btn btn-success" ng-if="polygon.innerPolygons.length && !polygon.showInnerPolygons" ng-click="showInnerPolygons(polygon)">Show inner polygons</a>
                             <a class="btn btn-warning" ng-if="polygon.showInnerPolygons" ng-click="hideInnerPolygons(polygon)">Hide inner polygons</a>
                         </div>
                     </div>
                     <span  ng-if="polygon.showInnerPolygons">
                         <div class="row">
                             <div class="col-xs-12" ng-repeat="innerPolygon in polygon.innerPolygons">
-                                <div class="card">
-                                    <h5 class="card-header">ID: {{ innerPolygon.id }}</h5>
+                                <div class="card text-bg-primary">
+                                    <h5 class="card-header d-flex justify-content-between align-items-center">ID: {{ innerPolygon.id }}</h5>
                                     <div class="card-body">
                                         <p class="card-text">
                                             AREA: {{ innerPolygon.area }}<br/>
                                             PERIMETER: {{ innerPolygon.perimeter }}<br/>
                                         </p>
                                         <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon)">Delete</a>
-                                        <a class="btn btn-primary" ng-if="innerPolygon.innerPolygons.length && !innerPolygon.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon)">Show inner polygons</a>
+                                        <a class="btn btn-success" ng-if="innerPolygon.innerPolygons.length && !innerPolygon.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon)">Show inner polygons</a>
                                         <a class="btn btn-warning" ng-if="innerPolygon.showInnerPolygons" ng-click="hideInnerPolygons(innerPolygon)">Hide inner polygons</a>
                                     </div>
                                 </div>
                                 <span  ng-if="innerPolygon.showInnerPolygons">
                                     <div class="row">
                                         <div class="col-xs-12" ng-repeat="innerPolygon2lvl in innerPolygon.innerPolygons">
-                                            <div class="card">
-                                                <h5 class="card-header">ID: {{ innerPolygon2lvl.id }}</h5>
+                                            <div class="card text-bg-success">
+                                                <h5 class="card-header d-flex justify-content-between align-items-center">
+                                                    ID: {{ innerPolygon2lvl.id }}
+                                                    <div class="btn-group" role="group">
+                                                        <input type="checkbox" ng-model="innerPolygon2lvl.overlayItemCheck" class="btn-check" id="btncheck-{{ innerPolygon2lvl.id }}" ng-change="overlayBtnPress(innerPolygon2lvl, innerPolygon2lvl.overlayItemCheck)" autocomplete="off">
+                                                        <label class="btn btn-outline-warning" for="btncheck-{{ innerPolygon2lvl.id }}"><i class="bi-bookmark-check-fill"></i></label>
+                                                    </div>
+                                                </h5>
                                                 <div class="card-body">
                                                     <p class="card-text">
                                                         AREA: {{ innerPolygon2lvl.area }}<br/>
@@ -174,7 +183,7 @@
     });
 </script>
 
-<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=124"></script>
+<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=132"></script>
 
 </body>
 </html>
