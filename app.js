@@ -153,7 +153,13 @@
     };
 
     $scope.handlePolygonClick  = function (clickedPolygon){
+      $scope.polygon.setOptions({
+        strokeColor: '#0000FF',
+      });
       $scope.polygon = clickedPolygon;
+      $scope.polygon.setOptions({
+        strokeColor: '#00FF00',
+      });
     };
 
     $scope.deletePolygon = function (polygon) {
@@ -546,6 +552,11 @@
         return;
       }
 
+      // if (!$scope.polygon.outerPolygonContent) {
+      //   alert('Please select inner polygon.')
+      //   return;
+      // }
+
       if (!referenceLine) {
         alert('Please draw a reference line first.');
         return;
@@ -581,10 +592,10 @@
 
     function initialize() {
       map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 10,
+        zoom: 13,
         center: {
-          lat: 37.7893719,
-          lng: -122.3942,
+          lat: -38.085898,
+          lng: 145.406453,
         },
         mapTypeId: google.maps.MapTypeId.ROADMAP,
         streetViewControl: false,
@@ -697,7 +708,18 @@
               return;
             }
 
-            $scope.polygon = newShape;
+            if ($scope.polygon) {
+              $scope.polygon.setOptions({
+                strokeColor: "#0000FF",
+              });
+            }
+            if (isInnerPolygon) {
+              $scope.polygon = newShape;
+              $scope.polygon.setOptions({
+                strokeColor: "#00FF00",
+              });
+            }
+
             let area = google.maps.geometry.spherical.computeArea(newShape.getPath());
             if (area > 100000) {
               area =  (area / 1000000).toFixed(2) + ' sq km';
@@ -738,6 +760,8 @@
             $scope.$apply();
 
             google.maps.event.addListener(newShape, 'click', function (event) {
+              const checkIfOuter = $scope.polygons.find(elem => elem.content === newShape.content);
+              if (checkIfOuter) return;
               $scope.handlePolygonClick(newShape);
             });
           }
