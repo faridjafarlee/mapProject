@@ -276,7 +276,7 @@
                                             PERIMETER: {{ polygon.perimeter }}<br/>
                                         </p>
                                         <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
-                                        <a class="btn btn-success" ng-click="finishOverlay(polygon)">Finish drawing</a>
+                                        <a class="btn btn-success" ng-if="polygon.finished===false" ng-click="finishOverlay(polygon)">Finish drawing</a>
                                     </div>
                                 </div>
                             </div>
@@ -299,7 +299,7 @@
     });
 </script>
 
-<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=203"></script>
+<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=210"></script>
 
 </body>
 </html>

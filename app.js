@@ -277,6 +277,36 @@
       }
     };
 
+    function handleOverlayPolygonChange() {
+      const polygon = $scope.overlays[$scope.overlays.length - 1].polygon;
+      let area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+      let areaAcres = squareMetersToAcres(area).toFixed(2) + ' acres';
+      let areaHectares = squareMetersToHectares(area).toFixed(2) + ' ha';
+      if (area > 100000) {
+        area =  (area / 1000000).toFixed(2) + ' sq km';
+      } else {
+        area = area.toFixed(2) + 'sq m';
+      }
+      let perimeter = google.maps.geometry.spherical.computeLength(polygon.getPath());
+      if (perimeter > 1000) {
+        perimeter = (perimeter / 1000).toFixed(2) + ' km';
+      } else {
+        perimeter = perimeter.toFixed(2) + ' m';
+      }
+
+      $scope.overlays[$scope.overlays.length - 1] = {
+        ...$scope.overlays[$scope.overlays.length - 1],
+        area,
+        areaAcres,
+        areaHectares,
+        perimeter,
+      };
+
+      try {
+        $scope.$apply();
+      } catch (e) {}
+    }
+
     $scope.mergePolygons = function () {
       $scope.polygonsToMerge.sort((a, b) => a.order - b.order);
 
@@ -371,6 +401,10 @@
         innerPolygons: [],
       });
       polygonCounter++;
+
+      google.maps.event.addListener(newPolygon.getPath(), 'insert_at', handleOverlayPolygonChange);
+      google.maps.event.addListener(newPolygon.getPath(), 'remove_at', handleOverlayPolygonChange);
+      google.maps.event.addListener(newPolygon.getPath(), 'set_at', handleOverlayPolygonChange);
 
       document.getElementById('overlays-tab').click();
 
@@ -1259,3 +1293,4 @@
     google.maps.event.addDomListener(window, 'load', initialize);
   });
 })(myApp);
+g
