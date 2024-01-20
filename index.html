@@ -25,7 +25,7 @@
 
     <!-- Google Maps -->
     <script type="text/javascript"
-            src="http://maps.google.com/maps/api/js?key=YOUR-API-KEY&v=weekly&libraries=drawing,geometry,places"></script>
+            src="http://maps.google.com/maps/api/js?key=YOURKEY&v=weekly&libraries=drawing,geometry,places"></script>
 
     <style type="text/css">
         #map, html, body {
@@ -74,10 +74,33 @@
 
 </head>
 <body ng-controller="AppController">
-<div class="container-fluid text-center">
-    <div class="row">
+<div class="container-fluid text-center min-vw-100 min-vh-100">
+    <div class="row" style="height: 20vh">
         <div class="col-xs-12">
             <h2>Maps project (angularJs + Google Maps API)</h2>
+        </div>
+        <div class="col-xs-12">
+            <div class="row" style="padding-bottom: 10px;">
+                <div class="col-xs-2 col-md-2 col-lg-2">
+                    <button id="merge-button" type="button" ng-click="mergePolygons()" ng-show="polygonsToMerge.length > 1" class="btn btn-warning">Merge</button>
+                </div>
+                <div class="col-xs-2 col-md-2 col-lg-2">
+                    <button id="undo-button" type="button" ng-show="lastAction" class="btn btn-warning">Undo Action</button>
+                </div>
+                <!--                <div class="col-xs-2 col-md-2 col-lg-2">-->
+                <!--                    <button id="delete-button" type="button" ng-show="polygon" class="btn btn-danger">Delete Selected Shape</button>-->
+                <!--                </div>-->
+                <div class="col-xs-2 col-md-2 col-lg-2">
+                    <button type="button" class="btn btn-primary" ng-click="drawReferenceLine()" ng-if="!drawReferenceLineMode && polygon && anyInnerPolygon">Draw Reference Line</button>
+                    <button type="button" class="btn btn-success" ng-click="finishReferenceLine()" ng-if="drawReferenceLineMode">Finish Drawing Reference Line</button>
+                </div>
+                <div class="col-xs-6 col-md-6 col-lg-6">
+                    <div class="input-group flex-nowrap">
+                        <span class="input-group-text" id="addon-wrapping">!</span>
+                        <input type="text" class="form-control" id="location-search" placeholder="Search for a location" aria-label="location" aria-describedby="addon-wrapping">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!--    <div class="row" style="padding-bottom: 20px;">-->
@@ -88,35 +111,43 @@
     <!--            <div id="color-palette" style="margin: 0 auto; padding-left: 47%"></div>-->
     <!--        </div>-->
     <!--    </div>-->
-    <div class="row" style="padding-bottom: 10px;">
-        <div class="offset-xs-2 col-xs-2 offset-md-2 col-md-2 offset-lg-2 col-lg-2">
-            <button id="delete-button" type="button" ng-show="polygon" class="btn btn-danger">Delete Selected Shape</button>
-        </div>
-        <div class="col-xs-2 col-md-2 col-lg-2">
-            <button type="button" class="btn btn-primary" ng-click="drawReferenceLine()" ng-if="!drawReferenceLineMode && polygon && anyInnerPolygon">Draw Reference Line</button>
-            <button type="button" class="btn btn-success" ng-click="finishReferenceLine()" ng-if="drawReferenceLineMode">Finish Drawing Reference Line</button>
-        </div>
-        <div class="col-xs-6 col-md-6 col-lg-6">
-            <div class="input-group flex-nowrap">
-                <span class="input-group-text" id="addon-wrapping">!</span>
-                <input type="text" class="form-control" id="location-search" placeholder="Search for a location" aria-label="location" aria-describedby="addon-wrapping">
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-xs-2 col-md-2 col-lg-2 col-xl-2" style="padding-top: 20px;">
-            <div class="row">
+    <div class="row" style="max-height: 80vh; min-height: 80vh">
+        <div class="col-xs-2 col-md-2 col-lg-2 col-xl-2" style="overflow-y: scroll; max-height: 80vh; min-height: 80vh;">
+            <div class="row" style="overflow-y: scroll;">
+                <div class="col-xs-12">
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="inputGroupSelect01">Units</label>
+                        <select class="form-select" ng-model="unitsType" ng-init="unitsType='me'" id="inputGroupSelect01">
+                            <option value="me" selected>m^2</option>
+                            <option value="ac">acres</option>
+                            <option value="ha">ha</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="col-xs-12">
                     <h4>Polygons:</h4>
                 </div>
                 <div class="col-xs-12" ng-repeat="polygon in polygons">
                     <div class="card text-bg-secondary">
                         <h5 class="card-header d-flex justify-content-between align-items-center">
-                            ID: {{ polygon.id }}
+                            <span ng-if="!polygon.editMode">{{ polygon.name }}</span>
+                            <input type="text" class="form-control" ng-if="polygon.editMode" ng-model="polygon.name">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary" ng-if="!polygon.editMode" ng-click="editPolygon(polygon)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-success" ng-if="polygon.editMode" ng-click="updatePolygon(polygon)">
+                                    <i class="bi bi-floppy"></i>
+                                </button>
+                            </div>
                         </h5>
                         <div class="card-body">
                             <p class="card-text">
-                                AREA: {{ polygon.area }}<br/>
+                                AREA:
+                                <span ng-show="unitsType=='me'">{{ polygon.area }}</span>
+                                <span ng-show="unitsType=='ac'">{{ polygon.areaAcres }}</span>
+                                <span ng-show="unitsType=='ha'">{{ polygon.areaHectares }}</span>
+                                <br/>
                                 PERIMETER: {{ polygon.perimeter }}<br/>
                             </p>
                             <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
@@ -128,10 +159,25 @@
                         <div class="row">
                             <div class="col-xs-12" ng-repeat="innerPolygon in polygon.innerPolygons">
                                 <div class="card text-bg-primary">
-                                    <h5 class="card-header d-flex justify-content-between align-items-center">ID: {{ innerPolygon.id }}</h5>
+                                    <h5 class="card-header d-flex justify-content-between align-items-center">
+                                        <span ng-if="!innerPolygon.editMode">{{ innerPolygon.name }}</span>
+                                        <input type="text" class="form-control" ng-if="innerPolygon.editMode" ng-model="innerPolygon.name">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary" ng-if="!innerPolygon.editMode" ng-click="editPolygon(innerPolygon)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-success" ng-if="innerPolygon.editMode" ng-click="updatePolygon(innerPolygon)">
+                                                <i class="bi bi-floppy"></i>
+                                            </button>
+                                        </div>
+                                    </h5>
                                     <div class="card-body">
                                         <p class="card-text">
-                                            AREA: {{ innerPolygon.area }}<br/>
+                                            AREA:
+                                            <span ng-show="unitsType=='me'">{{ innerPolygon.area }}</span>
+                                            <span ng-show="unitsType=='ac'">{{ innerPolygon.areaAcres }}</span>
+                                            <span ng-show="unitsType=='ha'">{{ innerPolygon.areaHectares }}</span>
+                                            <br/>
                                             PERIMETER: {{ innerPolygon.perimeter }}<br/>
                                         </p>
                                         <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon)">Delete</a>
@@ -144,15 +190,26 @@
                                         <div class="col-xs-12" ng-repeat="innerPolygon2lvl in innerPolygon.innerPolygons">
                                             <div class="card text-bg-success">
                                                 <h5 class="card-header d-flex justify-content-between align-items-center">
-                                                    ID: {{ innerPolygon2lvl.id }}
+                                                    <span ng-if="!innerPolygon2lvl.editMode">{{ innerPolygon2lvl.name }}</span>
+                                                    <input type="text" class="form-control" ng-if="innerPolygon2lvl.editMode" ng-model="innerPolygon2lvl.name">
                                                     <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-primary" ng-if="!innerPolygon2lvl.editMode" ng-click="editPolygon(innerPolygon2lvl)">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-success" ng-if="innerPolygon2lvl.editMode" ng-click="updatePolygon(innerPolygon2lvl)">
+                                                            <i class="bi bi-floppy"></i>
+                                                        </button>
                                                         <input type="checkbox" ng-model="innerPolygon2lvl.overlayItemCheck" class="btn-check" id="btncheck-{{ innerPolygon2lvl.id }}" ng-change="overlayBtnPress(innerPolygon2lvl, innerPolygon2lvl.overlayItemCheck)" autocomplete="off">
                                                         <label class="btn btn-outline-warning" for="btncheck-{{ innerPolygon2lvl.id }}"><i class="bi-bookmark-check-fill"></i></label>
                                                     </div>
                                                 </h5>
                                                 <div class="card-body">
                                                     <p class="card-text">
-                                                        AREA: {{ innerPolygon2lvl.area }}<br/>
+                                                        AREA:
+                                                        <span ng-show="unitsType=='me'">{{ innerPolygon2lvl.area }}</span>
+                                                        <span ng-show="unitsType=='ac'">{{ innerPolygon2lvl.areaAcres }}</span>
+                                                        <span ng-show="unitsType=='ha'">{{ innerPolygon2lvl.areaHectares }}</span>
+                                                        <br/>
                                                         PERIMETER: {{ innerPolygon2lvl.perimeter }}<br/>
                                                     </p>
                                                     <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon2lvl)">Delete</a>
@@ -170,7 +227,7 @@
             </div>
 
         </div>
-        <div class="col-xs-10 col-md-10 col-lg-10 col-xl-10 min-vh-100" style="max-height: 900px">
+        <div class="col-xs-10 col-md-10 col-lg-10 col-xl-10" style="max-height: 80vh; min-height: 80vh;">
             <div id="map"></div>
         </div>
     </div>
@@ -183,7 +240,7 @@
     });
 </script>
 
-<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=145"></script>
+<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=185"></script>
 
 </body>
 </html>
