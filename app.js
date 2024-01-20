@@ -16,8 +16,103 @@
     $scope.drawReferenceLineMode = false;
     $scope.anyInnerPolygon = false;
     $scope.polygons = [];
+    $scope.overlays = [];
     $scope.unitsType = 'me';
+    $scope.showMode = 'polygons';
     $scope.polygonsToMerge = [];
+
+
+    $scope.switchToPolygons = function () {
+      if ($scope.showMode !== 'polygons') {
+        // hidePolygons
+        $scope.polygons.forEach(outerPolygon => {
+          outerPolygon.polygon.setMap(map);
+          if (markers[outerPolygon.content].length) {
+            for (const marker of markers[outerPolygon.content]) {
+              marker.setMap(map)
+            }
+          }
+          if (outerPolygon.innerPolygons?.length) {
+            outerPolygon.innerPolygons.forEach(innerPolygon => {
+              innerPolygon.polygon.setMap(map);
+              if (markers[innerPolygon.content].length) {
+                for (const marker of markers[innerPolygon.content]) {
+                  marker.setMap(map)
+                }
+              }
+              if (innerPolygon.innerPolygons?.length) {
+                innerPolygon.innerPolygons.forEach(segmentPolygon => {
+                  segmentPolygon.polygon.setMap(map);
+                  if (markers[segmentPolygon.content].length) {
+                    for (const marker of markers[segmentPolygon.content]) {
+                      marker.setMap(map)
+                    }
+                  }
+                });
+              }
+            })
+          }
+        });
+
+        // showOverlays
+        $scope.overlays.forEach(overlayPolygon => {
+          overlayPolygon.polygon.setMap(null);
+          if (markers[overlayPolygon.content].length) {
+            for (const marker of markers[overlayPolygon.content]) {
+              marker.setMap(null)
+            }
+          }
+        });
+
+        $scope.showMode = 'polygons';
+      }
+    }
+
+    $scope.switchToOverlays = function () {
+      if ($scope.showMode !== 'overlays') {
+        // hidePolygons
+        $scope.polygons.forEach(outerPolygon => {
+          outerPolygon.polygon.setMap(null);
+          if (markers[outerPolygon.content].length) {
+            for (const marker of markers[outerPolygon.content]) {
+              marker.setMap(null)
+            }
+          }
+          if (outerPolygon.innerPolygons?.length) {
+            outerPolygon.innerPolygons.forEach(innerPolygon => {
+              innerPolygon.polygon.setMap(null);
+              if (markers[innerPolygon.content].length) {
+                for (const marker of markers[innerPolygon.content]) {
+                  marker.setMap(null)
+                }
+              }
+              if (innerPolygon.innerPolygons?.length) {
+                innerPolygon.innerPolygons.forEach(segmentPolygon => {
+                  segmentPolygon.polygon.setMap(null);
+                  if (markers[segmentPolygon.content].length) {
+                    for (const marker of markers[segmentPolygon.content]) {
+                      marker.setMap(null)
+                    }
+                  }
+                });
+              }
+            })
+          }
+        });
+
+        // showOverlays
+        $scope.overlays.forEach(overlayPolygon => {
+          overlayPolygon.polygon.setMap(map);
+          if (markers[overlayPolygon.content].length) {
+            for (const marker of markers[overlayPolygon.content]) {
+              marker.setMap(map)
+            }
+          }
+        });
+
+        $scope.showMode = 'overlays';
+      }
+    }
 
     function squareMetersToAcres(squareMeters) {
       // 1 acre = 4046.86 square meters
@@ -73,12 +168,14 @@
       if (selectedShape) {
         selectedShape.setMap(null);
         $scope.polygon = null;
-        $scope.$apply();
         if (markers[selectedShape.content].length) {
           for (const marker of markers[selectedShape.content]) {
             marker.setMap(null)
           }
         }
+        try {
+          $scope.$apply();
+        } catch (e) {}
       }
     }
 
@@ -207,9 +304,9 @@
         const turfOriginalPolygon = turf.polygon([originalPolygonCords]);
         return turfOriginalPolygon;
       });
-      const joinedPolygon = turf.union(...polygons);
 
-      console.log('joinedPolygon', joinedPolygon);
+      const joinedPolygon = polygons.reduce((a, b) => turf.union(a, b), polygons[0])
+
       const newPolygonCoordinates = [];
       if (joinedPolygon.geometry.type === 'Polygon') {
         joinedPolygon.geometry.coordinates[0].forEach(coord => {
@@ -232,7 +329,14 @@
         strokeWeight: 2,
         fillColor: '#0000FF',
         fillOpacity: 0.35,
+        editable: true,
       });
+
+      // newPolygon.setOptions({
+      //   fillColor: 'transparent',
+      //   strokeColor: 'transparent',
+      // });
+      newPolygon.setMap(null);
 
       newPolygon.content = uuidv4();
 
@@ -253,7 +357,7 @@
         perimeter = perimeter.toFixed(2) + ' m';
       }
 
-      $scope.polygons.push({
+      $scope.overlays.push({
         id: polygonCounter,
         name: polygonCounter,
         content: newPolygon.content,
@@ -262,13 +366,77 @@
         areaAcres,
         areaHectares,
         perimeter,
+        finished: false,
         contentChain: newPolygon.content,
         innerPolygons: [],
       });
       polygonCounter++;
 
-      $scope.$apply();
+      document.getElementById('overlays-tab').click();
+
+      $scope.polygonsToMerge = [];
+
+      $scope.polygons.forEach(outerPolygon => {
+        if (outerPolygon.innerPolygons?.length) {
+          outerPolygon.innerPolygons.forEach(innerPolygon => {
+            if (innerPolygon.innerPolygons?.length) {
+              innerPolygon.innerPolygons.forEach(segmentPolygon => {
+                if (segmentPolygon.overlayItemCheck === true) {
+                  segmentPolygon.polygon.setOptions({fillColor: '#0000FF'});
+                  segmentPolygon.overlayItemCheck = false;
+                }
+              });
+            }
+          });
+        }
+      });
+
+      try {
+        $scope.$apply();
+      } catch (e) {}
     }
+
+    $scope.finishOverlay = function (polygonObj) {
+      const polygon = polygonObj.polygon;
+      polygon.setOptions({
+        editable: false,
+        fillOpacity: 0,
+      });
+
+      markers[polygon.content] = [];
+      addNumberedMarker(polygon, polygonObj.name);
+
+      const path = polygon.getPath();
+
+      for (let i = 0; i < path.getLength(); i++) {
+        const segmentStart = path.getAt(i);
+        const segmentEnd = path.getAt((i + 1) % path.getLength());
+        const centerLatLng = new google.maps.LatLng(
+          (segmentStart.lat() + segmentEnd.lat()) / 2,
+          (segmentStart.lng() + segmentEnd.lng()) / 2
+        );
+
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(segmentStart, segmentEnd);
+        let formattedDistance = '';
+        if (distance > 1000) {
+          formattedDistance = (distance / 1000).toFixed(2) + ' km';
+        } else {
+          formattedDistance = (distance).toFixed(2) + ' m';
+        }
+        if (distance !== 0) {
+          const marker = new google.maps.Marker({
+            position: centerLatLng,
+            map: map,
+            icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
+            label: {
+              text: formattedDistance,
+              color: 'red',
+            },
+          });
+          markers[polygon.content].push(marker);
+        }
+      }
+    };
 
     function deleteInnerPolygons(innerPolygon) {
       if (innerPolygon.innerPolygons.length) {
@@ -286,17 +454,20 @@
 
     $scope.editPolygon = function (polygon) {
       polygon.editMode = true;
-      $scope.$apply();
+      try {
+        $scope.$apply();
+      } catch (e) {}
     };
 
-    $scope.updatePolygon = function (polygon) {
+    $scope.updatePolygon = function (polygon, type) {
       polygon.editMode = false;
-      console.log('polygon', polygon);
       for (const marker of markers[polygon.content]) {
         marker.setMap(null)
       }
-      addNumberedMarker(polygon.polygon, polygon.name);
-      $scope.$apply();
+      addNumberedMarker(polygon.polygon, polygon.name, (type === 'overlay') ? 'red' : 'black');
+      try {
+        $scope.$apply();
+      } catch (e) {}
     };
 
     $scope.deletePolygon = function (polygon) {
@@ -333,7 +504,9 @@
         }
       }
       $scope.polygons.splice(index, 1);
-      $scope.$apply();
+      try {
+        $scope.$apply();
+      } catch (e) {}
     };
 
     $scope.drawReferenceLine = function () {
@@ -712,10 +885,12 @@
         }
       } while (!hasEnded);
 
-      $scope.$apply();
+      try {
+        $scope.$apply();
+      } catch (e) {}
     }
 
-    function addNumberedMarker(polygon, number) {
+    function addNumberedMarker(polygon, number, color = 'black') {
       if (!markers[polygon.content]) markers[polygon.content] = [];
 
       const bounds = new google.maps.LatLngBounds();
@@ -727,7 +902,10 @@
         position: center,
         map: map,
         icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
-        label: number.toString(),
+        label: {
+          text: number.toString(),
+          color,
+        },
       });
 
       markers[polygon.content].push(marker);
@@ -954,7 +1132,9 @@
               polygonCounter++;
             }
 
-            $scope.$apply();
+            try {
+              $scope.$apply();
+            } catch (e) {}
 
             google.maps.event.addListener(newShape, 'click', function (event) {
               console.log('handlePolygonClick-event', event);

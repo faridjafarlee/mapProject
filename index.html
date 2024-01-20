@@ -125,48 +125,42 @@
                     </div>
                 </div>
                 <div class="col-xs-12">
-                    <h4>Polygons:</h4>
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active"
+                                    id="polygons-tab"
+                                    ng-click="switchToPolygons()"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#polygons-tab-pane"
+                                    type="button" role="tab"
+                                    aria-controls="polygons-tab-pane"
+                                    aria-selected="true">Polygons</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link"
+                                    id="overlays-tab"
+                                    ng-click="switchToOverlays()"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#overlays-tab-pane"
+                                    type="button" role="tab"
+                                    aria-controls="overlays-tab-pane"
+                                    aria-selected="false">Overlays</button>
+                        </li>
+                    </ul>
                 </div>
-                <div class="col-xs-12" ng-repeat="polygon in polygons">
-                    <div class="card text-bg-secondary">
-                        <h5 class="card-header d-flex justify-content-between align-items-center">
-                            <span ng-if="!polygon.editMode">{{ polygon.name }}</span>
-                            <input type="text" class="form-control" ng-if="polygon.editMode" ng-model="polygon.name">
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-primary" ng-if="!polygon.editMode" ng-click="editPolygon(polygon)">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-success" ng-if="polygon.editMode" ng-click="updatePolygon(polygon)">
-                                    <i class="bi bi-floppy"></i>
-                                </button>
-                            </div>
-                        </h5>
-                        <div class="card-body">
-                            <p class="card-text">
-                                AREA:
-                                <span ng-show="unitsType=='me'">{{ polygon.area }}</span>
-                                <span ng-show="unitsType=='ac'">{{ polygon.areaAcres }}</span>
-                                <span ng-show="unitsType=='ha'">{{ polygon.areaHectares }}</span>
-                                <br/>
-                                PERIMETER: {{ polygon.perimeter }}<br/>
-                            </p>
-                            <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
-                            <a class="btn btn-success" ng-if="polygon.innerPolygons.length && !polygon.showInnerPolygons" ng-click="showInnerPolygons(polygon)">Show inner polygons</a>
-                            <a class="btn btn-warning" ng-if="polygon.showInnerPolygons" ng-click="hideInnerPolygons(polygon)">Hide inner polygons</a>
-                        </div>
-                    </div>
-                    <span  ng-if="polygon.showInnerPolygons">
+                <div class="col-xs-12 tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="polygons-tab-pane" role="tabpanel" aria-labelledby="polygons-tab" tabindex="0">
                         <div class="row">
-                            <div class="col-xs-12" ng-repeat="innerPolygon in polygon.innerPolygons">
-                                <div class="card text-bg-primary">
+                            <div class="col-xs-12" ng-repeat="polygon in polygons">
+                                <div class="card text-bg-secondary">
                                     <h5 class="card-header d-flex justify-content-between align-items-center">
-                                        <span ng-if="!innerPolygon.editMode">{{ innerPolygon.name }}</span>
-                                        <input type="text" class="form-control" ng-if="innerPolygon.editMode" ng-model="innerPolygon.name">
+                                        <span ng-if="!polygon.editMode">{{ polygon.name }}</span>
+                                        <input type="text" class="form-control" ng-if="polygon.editMode" ng-model="polygon.name">
                                         <div class="btn-group" role="group">
-                                            <button type="button" class="btn btn-primary" ng-if="!innerPolygon.editMode" ng-click="editPolygon(innerPolygon)">
+                                            <button type="button" class="btn btn-primary" ng-if="!polygon.editMode" ng-click="editPolygon(polygon)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <button type="button" class="btn btn-success" ng-if="innerPolygon.editMode" ng-click="updatePolygon(innerPolygon)">
+                                            <button type="button" class="btn btn-success" ng-if="polygon.editMode" ng-click="updatePolygon(polygon)">
                                                 <i class="bi bi-floppy"></i>
                                             </button>
                                         </div>
@@ -174,55 +168,120 @@
                                     <div class="card-body">
                                         <p class="card-text">
                                             AREA:
-                                            <span ng-show="unitsType=='me'">{{ innerPolygon.area }}</span>
-                                            <span ng-show="unitsType=='ac'">{{ innerPolygon.areaAcres }}</span>
-                                            <span ng-show="unitsType=='ha'">{{ innerPolygon.areaHectares }}</span>
+                                            <span ng-show="unitsType=='me'">{{ polygon.area }}</span>
+                                            <span ng-show="unitsType=='ac'">{{ polygon.areaAcres }}</span>
+                                            <span ng-show="unitsType=='ha'">{{ polygon.areaHectares }}</span>
                                             <br/>
-                                            PERIMETER: {{ innerPolygon.perimeter }}<br/>
+                                            PERIMETER: {{ polygon.perimeter }}<br/>
                                         </p>
-                                        <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon)">Delete</a>
-                                        <a class="btn btn-success" ng-if="innerPolygon.innerPolygons.length && !innerPolygon.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon)">Show inner polygons</a>
-                                        <a class="btn btn-warning" ng-if="innerPolygon.showInnerPolygons" ng-click="hideInnerPolygons(innerPolygon)">Hide inner polygons</a>
+                                        <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
+                                        <a class="btn btn-success" ng-if="polygon.innerPolygons.length && !polygon.showInnerPolygons" ng-click="showInnerPolygons(polygon)">Show inner polygons</a>
+                                        <a class="btn btn-warning" ng-if="polygon.showInnerPolygons" ng-click="hideInnerPolygons(polygon)">Hide inner polygons</a>
                                     </div>
                                 </div>
-                                <span  ng-if="innerPolygon.showInnerPolygons">
+                                <span  ng-if="polygon.showInnerPolygons">
                                     <div class="row">
-                                        <div class="col-xs-12" ng-repeat="innerPolygon2lvl in innerPolygon.innerPolygons">
-                                            <div class="card text-bg-success">
+                                        <div class="col-xs-12" ng-repeat="innerPolygon in polygon.innerPolygons">
+                                            <div class="card text-bg-primary">
                                                 <h5 class="card-header d-flex justify-content-between align-items-center">
-                                                    <span ng-if="!innerPolygon2lvl.editMode">{{ innerPolygon2lvl.name }}</span>
-                                                    <input type="text" class="form-control" ng-if="innerPolygon2lvl.editMode" ng-model="innerPolygon2lvl.name">
+                                                    <span ng-if="!innerPolygon.editMode">{{ innerPolygon.name }}</span>
+                                                    <input type="text" class="form-control" ng-if="innerPolygon.editMode" ng-model="innerPolygon.name">
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-primary" ng-if="!innerPolygon2lvl.editMode" ng-click="editPolygon(innerPolygon2lvl)">
+                                                        <button type="button" class="btn btn-primary" ng-if="!innerPolygon.editMode" ng-click="editPolygon(innerPolygon)">
                                                             <i class="bi bi-pencil-square"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-success" ng-if="innerPolygon2lvl.editMode" ng-click="updatePolygon(innerPolygon2lvl)">
+                                                        <button type="button" class="btn btn-success" ng-if="innerPolygon.editMode" ng-click="updatePolygon(innerPolygon)">
                                                             <i class="bi bi-floppy"></i>
                                                         </button>
-                                                        <input type="checkbox" ng-model="innerPolygon2lvl.overlayItemCheck" class="btn-check" id="btncheck-{{ innerPolygon2lvl.id }}" ng-change="overlayBtnPress(innerPolygon2lvl, innerPolygon2lvl.overlayItemCheck)" autocomplete="off">
-                                                        <label class="btn btn-outline-warning" for="btncheck-{{ innerPolygon2lvl.id }}"><i class="bi-bookmark-check-fill"></i></label>
                                                     </div>
                                                 </h5>
                                                 <div class="card-body">
                                                     <p class="card-text">
                                                         AREA:
-                                                        <span ng-show="unitsType=='me'">{{ innerPolygon2lvl.area }}</span>
-                                                        <span ng-show="unitsType=='ac'">{{ innerPolygon2lvl.areaAcres }}</span>
-                                                        <span ng-show="unitsType=='ha'">{{ innerPolygon2lvl.areaHectares }}</span>
+                                                        <span ng-show="unitsType=='me'">{{ innerPolygon.area }}</span>
+                                                        <span ng-show="unitsType=='ac'">{{ innerPolygon.areaAcres }}</span>
+                                                        <span ng-show="unitsType=='ha'">{{ innerPolygon.areaHectares }}</span>
                                                         <br/>
-                                                        PERIMETER: {{ innerPolygon2lvl.perimeter }}<br/>
+                                                        PERIMETER: {{ innerPolygon.perimeter }}<br/>
                                                     </p>
-                                                    <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon2lvl)">Delete</a>
-                                                    <a class="btn btn-primary" ng-if="innerPolygon2lvl.innerPolygons.length && !innerPolygon2lvl.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon2lvl)">Show inner polygons</a>
-                                                    <a class="btn btn-warning" ng-if="innerPolygon2lvl.showInnerPolygons" ng-click="hideInnerPolygons(innerPolygon2lvl)">Hide inner polygons</a>
+                                                    <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon)">Delete</a>
+                                                    <a class="btn btn-success" ng-if="innerPolygon.innerPolygons.length && !innerPolygon.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon)">Show inner polygons</a>
+                                                    <a class="btn btn-warning" ng-if="innerPolygon.showInnerPolygons" ng-click="hideInnerPolygons(innerPolygon)">Hide inner polygons</a>
                                                 </div>
                                             </div>
+                                            <span  ng-if="innerPolygon.showInnerPolygons">
+                                                <div class="row">
+                                                    <div class="col-xs-12" ng-repeat="innerPolygon2lvl in innerPolygon.innerPolygons">
+                                                        <div class="card text-bg-success">
+                                                            <h5 class="card-header d-flex justify-content-between align-items-center">
+                                                                <span ng-if="!innerPolygon2lvl.editMode">{{ innerPolygon2lvl.name }}</span>
+                                                                <input type="text" class="form-control" ng-if="innerPolygon2lvl.editMode" ng-model="innerPolygon2lvl.name">
+                                                                <div class="btn-group" role="group">
+                                                                    <button type="button" class="btn btn-primary" ng-if="!innerPolygon2lvl.editMode" ng-click="editPolygon(innerPolygon2lvl)">
+                                                                        <i class="bi bi-pencil-square"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-success" ng-if="innerPolygon2lvl.editMode" ng-click="updatePolygon(innerPolygon2lvl)">
+                                                                        <i class="bi bi-floppy"></i>
+                                                                    </button>
+                                                                    <input type="checkbox" ng-model="innerPolygon2lvl.overlayItemCheck" class="btn-check" id="btncheck-{{ innerPolygon2lvl.id }}" ng-change="overlayBtnPress(innerPolygon2lvl, innerPolygon2lvl.overlayItemCheck)" autocomplete="off">
+                                                                    <label class="btn btn-outline-warning" for="btncheck-{{ innerPolygon2lvl.id }}"><i class="bi-bookmark-check-fill"></i></label>
+                                                                </div>
+                                                            </h5>
+                                                            <div class="card-body">
+                                                                <p class="card-text">
+                                                                    AREA:
+                                                                    <span ng-show="unitsType=='me'">{{ innerPolygon2lvl.area }}</span>
+                                                                    <span ng-show="unitsType=='ac'">{{ innerPolygon2lvl.areaAcres }}</span>
+                                                                    <span ng-show="unitsType=='ha'">{{ innerPolygon2lvl.areaHectares }}</span>
+                                                                    <br/>
+                                                                    PERIMETER: {{ innerPolygon2lvl.perimeter }}<br/>
+                                                                </p>
+                                                                <a class="btn btn-danger" ng-click="deletePolygon(innerPolygon2lvl)">Delete</a>
+                                                                <a class="btn btn-primary" ng-if="innerPolygon2lvl.innerPolygons.length && !innerPolygon2lvl.showInnerPolygons" ng-click="showInnerPolygons(innerPolygon2lvl)">Show inner polygons</a>
+                                                                <a class="btn btn-warning" ng-if="innerPolygon2lvl.showInnerPolygons" ng-click="hideInnerPolygons(innerPolygon2lvl)">Hide inner polygons</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </span>
                                         </div>
                                     </div>
                                 </span>
                             </div>
                         </div>
-                    </span>
+                    </div>
+                    <div class="tab-pane fade" id="overlays-tab-pane" role="tabpanel" aria-labelledby="overlays-tab" tabindex="0">
+                        <div class="row">
+                            <div class="col-xs-12" ng-repeat="polygon in overlays">
+                                <div class="card text-bg-secondary">
+                                    <h5 class="card-header d-flex justify-content-between align-items-center">
+                                        <span ng-if="!polygon.editMode">{{ polygon.name }}</span>
+                                        <input type="text" class="form-control" ng-if="polygon.editMode" ng-model="polygon.name">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary" ng-if="!polygon.editMode" ng-click="editPolygon(polygon)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-success" ng-if="polygon.editMode" ng-click="updatePolygon(polygon, 'overlay')">
+                                                <i class="bi bi-floppy"></i>
+                                            </button>
+                                        </div>
+                                    </h5>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            AREA:
+                                            <span ng-show="unitsType=='me'">{{ polygon.area }}</span>
+                                            <span ng-show="unitsType=='ac'">{{ polygon.areaAcres }}</span>
+                                            <span ng-show="unitsType=='ha'">{{ polygon.areaHectares }}</span>
+                                            <br/>
+                                            PERIMETER: {{ polygon.perimeter }}<br/>
+                                        </p>
+                                        <a class="btn btn-danger" ng-click="deletePolygon(polygon)">Delete</a>
+                                        <a class="btn btn-success" ng-click="finishOverlay(polygon)">Finish drawing</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -240,7 +299,7 @@
     });
 </script>
 
-<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=185"></script>
+<script type="text/javascript" src="https://faridjafarli.me/tasks/test-task/app.js?v=203"></script>
 
 </body>
 </html>
