@@ -40,16 +40,16 @@
                   marker.setMap(map)
                 }
               }
-              if (innerPolygon.innerPolygons?.length) {
-                innerPolygon.innerPolygons.forEach(segmentPolygon => {
-                  segmentPolygon.polygon.setMap(map);
-                  if (markers[segmentPolygon.content].length) {
-                    for (const marker of markers[segmentPolygon.content]) {
-                      marker.setMap(map)
-                    }
-                  }
-                });
-              }
+              // if (innerPolygon.innerPolygons?.length) {
+              //   innerPolygon.innerPolygons.forEach(segmentPolygon => {
+              //     segmentPolygon.polygon.setMap(map);
+              //     if (markers[segmentPolygon.content].length) {
+              //       for (const marker of markers[segmentPolygon.content]) {
+              //         marker.setMap(map)
+              //       }
+              //     }
+              //   });
+              // }
             })
           }
         });
@@ -86,16 +86,16 @@
                   marker.setMap(null)
                 }
               }
-              if (innerPolygon.innerPolygons?.length) {
-                innerPolygon.innerPolygons.forEach(segmentPolygon => {
-                  segmentPolygon.polygon.setMap(null);
-                  if (markers[segmentPolygon.content].length) {
-                    for (const marker of markers[segmentPolygon.content]) {
-                      marker.setMap(null)
-                    }
-                  }
-                });
-              }
+              // if (innerPolygon.innerPolygons?.length) {
+              //   innerPolygon.innerPolygons.forEach(segmentPolygon => {
+              //     segmentPolygon.polygon.setMap(null);
+              //     if (markers[segmentPolygon.content].length) {
+              //       for (const marker of markers[segmentPolygon.content]) {
+              //         marker.setMap(null)
+              //       }
+              //     }
+              //   });
+              // }
             })
           }
         });
@@ -279,6 +279,25 @@
 
     function handleOverlayPolygonChange() {
       const polygon = $scope.overlays[$scope.overlays.length - 1].polygon;
+
+      const originalPolygonCords = [];
+      polygon.getPath().Ig.forEach(coord => {
+        originalPolygonCords.push([coord.lng(), coord.lat()]);
+      });
+      originalPolygonCords.push([polygon.getPath().Ig[0].lng(), polygon.getPath().Ig[0].lat()]);
+      const turfOriginalPolygon = turf.polygon([originalPolygonCords]);
+
+      const difference = turf.difference(turfOriginalPolygon, $scope.originalOverlayTurf);
+      if (difference) {
+        // UNDO last change
+        alert('You could not enlarge polygon.');
+        polygon.setPath($scope.currentOverlayVertices.map(({ lat, lng }) => new google.maps.LatLng(lat, lng)));
+        google.maps.event.addListener(polygon.getPath(), 'insert_at', handleOverlayPolygonChange);
+        google.maps.event.addListener(polygon.getPath(), 'remove_at', handleOverlayPolygonChange);
+        google.maps.event.addListener(polygon.getPath(), 'set_at', handleOverlayPolygonChange);
+        return;
+      }
+
       let area = google.maps.geometry.spherical.computeArea(polygon.getPath());
       let areaAcres = squareMetersToAcres(area).toFixed(2) + ' acres';
       let areaHectares = squareMetersToHectares(area).toFixed(2) + ' ha';
@@ -302,27 +321,29 @@
         perimeter,
       };
 
+      $scope.currentOverlayVertices = polygon.getPath().getArray().map((latLng) => ({ lat: latLng.lat(), lng: latLng.lng() }));
+
       try {
         $scope.$apply();
       } catch (e) {}
     }
 
     $scope.mergePolygons = function () {
-      $scope.polygonsToMerge.sort((a, b) => a.order - b.order);
-
-      let isSequential = true;
-
-      for (let i = 1; i < $scope.polygonsToMerge.length; i++) {
-        if ($scope.polygonsToMerge[i].order - $scope.polygonsToMerge[i - 1].order !== 1) {
-          isSequential = false;
-          break;
-        }
-      }
-
-      if (isSequential === false) {
-        alert('Order of marked polygons is not sequential.');
-        return;
-      }
+      // $scope.polygonsToMerge.sort((a, b) => a.order - b.order);
+      //
+      // let isSequential = true;
+      //
+      // for (let i = 1; i < $scope.polygonsToMerge.length; i++) {
+      //   if ($scope.polygonsToMerge[i].order - $scope.polygonsToMerge[i - 1].order !== 1) {
+      //     isSequential = false;
+      //     break;
+      //   }
+      // }
+      //
+      // if (isSequential === false) {
+      //   alert('Order of marked polygons is not sequential.');
+      //   return;
+      // }
 
       const polygons = $scope.polygonsToMerge.map(polygonToMerge => {
         const polygon = polygonToMerge.polygon;
@@ -335,106 +356,122 @@
         return turfOriginalPolygon;
       });
 
-      const joinedPolygon = polygons.reduce((a, b) => turf.union(a, b), polygons[0])
-
-      const newPolygonCoordinates = [];
-      if (joinedPolygon.geometry.type === 'Polygon') {
-        joinedPolygon.geometry.coordinates[0].forEach(coord => {
-          console.log('coord', coord);
-          newPolygonCoordinates.push({lng: coord[0], lat: coord[1]});
-        })
-      }
-      if (joinedPolygon.geometry.type === 'MultiPolygon') {
-        joinedPolygon.geometry.coordinates[0].forEach(coord => {
-          console.log('coord', coord);
-          newPolygonCoordinates.push({lng: coord[0], lat: coord[1]});
-        })
-      }
-
-      const newPolygon = new google.maps.Polygon({
-        paths: newPolygonCoordinates,
-        map: map,
-        strokeColor: '#FF00FF',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#0000FF',
-        fillOpacity: 0.35,
-        editable: true,
-      });
-
-      // newPolygon.setOptions({
-      //   fillColor: 'transparent',
-      //   strokeColor: 'transparent',
-      // });
-      newPolygon.setMap(null);
-
-      newPolygon.content = uuidv4();
-
-      markers[newPolygon.content] = [];
-
-      let area = google.maps.geometry.spherical.computeArea(newPolygon.getPath());
-      let areaAcres = squareMetersToAcres(area).toFixed(2) + ' acres';
-      let areaHectares = squareMetersToHectares(area).toFixed(2) + ' ha';
-      if (area > 100000) {
-        area =  (area / 1000000).toFixed(2) + ' sq km';
-      } else {
-        area = area.toFixed(2) + 'sq m';
-      }
-      let perimeter = google.maps.geometry.spherical.computeLength(newPolygon.getPath());
-      if (perimeter > 1000) {
-        perimeter = (perimeter / 1000).toFixed(2) + ' km';
-      } else {
-        perimeter = perimeter.toFixed(2) + ' m';
-      }
-
-      $scope.overlays.push({
-        id: polygonCounter,
-        name: polygonCounter,
-        content: newPolygon.content,
-        polygon: newPolygon,
-        area,
-        areaAcres,
-        areaHectares,
-        perimeter,
-        finished: false,
-        contentChain: newPolygon.content,
-        innerPolygons: [],
-      });
-      polygonCounter++;
-
-      google.maps.event.addListener(newPolygon.getPath(), 'insert_at', handleOverlayPolygonChange);
-      google.maps.event.addListener(newPolygon.getPath(), 'remove_at', handleOverlayPolygonChange);
-      google.maps.event.addListener(newPolygon.getPath(), 'set_at', handleOverlayPolygonChange);
-
-      document.getElementById('overlays-tab').click();
-
-      $scope.polygonsToMerge = [];
-
-      $scope.polygons.forEach(outerPolygon => {
-        if (outerPolygon.innerPolygons?.length) {
-          outerPolygon.innerPolygons.forEach(innerPolygon => {
-            if (innerPolygon.innerPolygons?.length) {
-              innerPolygon.innerPolygons.forEach(segmentPolygon => {
-                if (segmentPolygon.overlayItemCheck === true) {
-                  segmentPolygon.polygon.setOptions({fillColor: '#0000FF'});
-                  segmentPolygon.overlayItemCheck = false;
-                }
-              });
-            }
-          });
-        }
-      });
-
       try {
-        $scope.$apply();
-      } catch (e) {}
+        const joinedPolygon = polygons.reduce((a, b) => turf.union(a, b), polygons[0])
+
+        console.log('joinedPolygon', joinedPolygon);
+        const newPolygonCoordinates = [];
+        if (joinedPolygon.geometry.type === 'Polygon') {
+          joinedPolygon.geometry.coordinates[0].forEach(coord => {
+            newPolygonCoordinates.push({lng: coord[0], lat: coord[1]});
+          })
+        }
+        if (joinedPolygon.geometry.type === 'MultiPolygon') {
+          if (joinedPolygon.geometry.coordinates.length > 1) {
+            alert('Order of marked polygons is not sequential.');
+            return;
+          }
+          joinedPolygon.geometry.coordinates[0].forEach(coord => {
+            newPolygonCoordinates.push({lng: coord[0], lat: coord[1]});
+          })
+        }
+
+        const newPolygon = new google.maps.Polygon({
+          paths: newPolygonCoordinates,
+          map: map,
+          strokeColor: '#FF00FF',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#0000FF',
+          fillOpacity: 0.35,
+          editable: true,
+        });
+
+        // newPolygon.setOptions({
+        //   fillColor: 'transparent',
+        //   strokeColor: 'transparent',
+        // });
+        newPolygon.setMap(null);
+
+        newPolygon.content = uuidv4();
+
+        markers[newPolygon.content] = [];
+
+        let area = google.maps.geometry.spherical.computeArea(newPolygon.getPath());
+        let areaAcres = squareMetersToAcres(area).toFixed(2) + ' acres';
+        let areaHectares = squareMetersToHectares(area).toFixed(2) + ' ha';
+        if (area > 100000) {
+          area =  (area / 1000000).toFixed(2) + ' sq km';
+        } else {
+          area = area.toFixed(2) + 'sq m';
+        }
+        let perimeter = google.maps.geometry.spherical.computeLength(newPolygon.getPath());
+        if (perimeter > 1000) {
+          perimeter = (perimeter / 1000).toFixed(2) + ' km';
+        } else {
+          perimeter = perimeter.toFixed(2) + ' m';
+        }
+
+        $scope.overlays.push({
+          id: polygonCounter,
+          name: polygonCounter,
+          content: newPolygon.content,
+          polygon: newPolygon,
+          area,
+          areaAcres,
+          areaHectares,
+          perimeter,
+          finished: false,
+          contentChain: newPolygon.content,
+          innerPolygons: [],
+        });
+        polygonCounter++;
+
+        const originalPolygonCords = [];
+        newPolygon.getPath().Ig.forEach(coord => {
+          originalPolygonCords.push([coord.lng(), coord.lat()]);
+        });
+        originalPolygonCords.push([newPolygon.getPath().Ig[0].lng(), newPolygon.getPath().Ig[0].lat()]);
+        $scope.originalOverlayTurf = turf.polygon([originalPolygonCords]);
+        $scope.currentOverlayVertices = newPolygon.getPath().getArray().map((latLng) => ({ lat: latLng.lat(), lng: latLng.lng() }));
+
+
+        google.maps.event.addListener(newPolygon.getPath(), 'insert_at', handleOverlayPolygonChange);
+        google.maps.event.addListener(newPolygon.getPath(), 'remove_at', handleOverlayPolygonChange);
+        google.maps.event.addListener(newPolygon.getPath(), 'set_at', handleOverlayPolygonChange);
+
+        document.getElementById('overlays-tab').click();
+
+        $scope.polygonsToMerge = [];
+
+        $scope.polygons.forEach(outerPolygon => {
+          if (outerPolygon.innerPolygons?.length) {
+            outerPolygon.innerPolygons.forEach(innerPolygon => {
+              if (innerPolygon.innerPolygons?.length) {
+                innerPolygon.innerPolygons.forEach(segmentPolygon => {
+                  if (segmentPolygon.overlayItemCheck === true) {
+                    segmentPolygon.polygon.setOptions({fillColor: '#0000FF'});
+                    segmentPolygon.overlayItemCheck = false;
+                  }
+                });
+              }
+            });
+          }
+        });
+
+        try {
+          $scope.$apply();
+        } catch (e) {};
+      } catch (e) {
+        console.error('e', e);
+        alert('Something went wrong.');
+      }
     }
 
     $scope.finishOverlay = function (polygonObj) {
       const polygon = polygonObj.polygon;
       polygon.setOptions({
         editable: false,
-        fillOpacity: 0,
       });
 
       markers[polygon.content] = [];
@@ -464,7 +501,7 @@
             icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
             label: {
               text: formattedDistance,
-              color: 'red',
+              color: 'green',
             },
           });
           markers[polygon.content].push(marker);
@@ -607,6 +644,17 @@
       return line;
     }
 
+    function extendLineByPoints(startPoint, endPoint, extensionDistance) {
+      const endHeading = google.maps.geometry.spherical.computeHeading(startPoint, endPoint);
+      const startHeading = google.maps.geometry.spherical.computeHeading(endPoint, startPoint);
+      const extendedStartPoint = google.maps.geometry.spherical.computeOffset(startPoint, extensionDistance, startHeading);
+      const extendedEndPoint = google.maps.geometry.spherical.computeOffset(endPoint, extensionDistance, endHeading);
+      return {
+        startPoint: extendedStartPoint,
+        endPoint: extendedEndPoint,
+      }
+    }
+
     let rectangle = null;
     let rectangleBounds = null;
 
@@ -702,6 +750,149 @@
         }
       }
       return null;
+    }
+
+    function isCoordinateOnPolygonBorder(lineCoords, pointCoords, polygonCoords) {
+      const line = turf.lineString(lineCoords);
+      const center = turf.point(turf.center(line).geometry.coordinates);
+      const point = turf.point(pointCoords);
+      const polygonEdges = turf.lineString(polygonCoords);
+      const turfPolygon = turf.polygon([polygonCoords]);
+      // const polygonEdges = turf.lineString(turfPolygon.geometry.coordinates[0]);
+
+      // const booleanIntersects = turf.booleanIntersects(polygonEdges, point)
+      // const booleanWithin = turf.booleanWithin(point, polygonEdges)
+      // const booleanWithinCenter = turf.booleanWithin(center, polygonEdges)
+      // const booleanContains = turf.booleanContains(polygonEdges, point)
+      // const booleanContainsCenter = turf.booleanContains(polygonEdges, center)
+      // const contains = turf.booleanContains(polygonEdges, line)
+      // const onBorder = turf.booleanPointOnLine(point, polygonEdges);
+      const onBorderCenter = turf.booleanPointOnLine(center, polygonEdges);
+      // const lineIntersect = turf.lineIntersect(polygonEdges, line)
+
+      // console.log('booleanIntersects', booleanIntersects);
+      // console.log('booleanWithin', booleanWithin);
+      // console.log('booleanWithinCenter', booleanWithinCenter);
+      // console.log('booleanContains', booleanContains);
+      // console.log('booleanContainsCenter', booleanContainsCenter);
+      // console.log('contains', contains);
+      // console.log('onBorder', onBorder);
+      console.log('onBorderCenter', onBorderCenter);
+      // console.log('lineIntersect', lineIntersect);
+
+      return onBorderCenter;
+    }
+
+    function areParallel(edge1, edge2) {
+      const edge1Start = edge1[0];
+      const edge1End = edge1[1];
+      const edge2Start = edge2[0];
+      const edge2End = edge2[1];
+      // const { startPoint: edge1Start, endPoint: edge1End } = extendLineByPoints(edge1[0], edge1[1], 500000);
+      // const { startPoint: edge2Start, endPoint: edge2End } = extendLineByPoints(edge2[0], edge2[1], 500000);
+      // console.log(
+      //   "[[edge1[0].lng(), edge1[0].lat()], [edge1[1].lng(), edge1[1].lat()]]",
+      //   [[edge1[0].lng(), edge1[0].lat()], [edge1[1].lng(), edge1[1].lat()]],
+      // )
+      // console.log(
+      //   "[[edge1Start.lng(), edge1Start.lat()], [edge1End.lng(), edge1End.lat()]]",
+      //   [[edge1Start.lng(), edge1Start.lat()], [edge1End.lng(), edge1End.lat()]],
+      // )
+      const line1 = turf.lineString([[edge1Start.lng(), edge1Start.lat()], [edge1End.lng(), edge1End.lat()]]);
+      const line2 = turf.lineString([[edge2Start.lng(), edge2Start.lat()], [edge2End.lng(), edge2End.lat()]]);
+      console.log('line1', line1)
+      console.log('line2', line2)
+      const point1 = turf.point([edge1Start.lng(), edge1Start.lat()]);
+      const point2 = turf.point([edge1End.lng(), edge1End.lat()]);
+      const bearing1 = turf.bearing(point1, point2);
+      const point3 = turf.point([edge2Start.lng(), edge2Start.lat()]);
+      const point4 = turf.point([edge2End.lng(), edge2End.lat()]);
+      const bearing2 = turf.bearing(point3, point4);
+      const angleTolerance = 0.5;
+      const areParallel = (Math.abs(bearing1 - bearing2) < angleTolerance)
+        || (Math.abs(bearing1 - bearing2 - 180) < angleTolerance);
+      // || (Math.abs(bearing1 - bearing2 + 180) < angleTolerance);
+      console.log(`bearing1: ${bearing1}, bearing2: ${bearing2} are ${areParallel}`);
+      return areParallel;
+      try {
+        const isParallel = turf.booleanParallel(line1, line2);
+        return isParallel;
+      } catch (e) {
+        // console.error(e);
+        if (e.message === 'invalid polygon') {
+          const point1 = turf.point([edge1Start.lng(), edge1Start.lat()]);
+          const point2 = turf.point([edge1End.lng(), edge1End.lat()]);
+          const bearing1 = turf.bearing(point1, point2);
+          const point3 = turf.point([edge2Start.lng(), edge2Start.lat()]);
+          const point4 = turf.point([edge2End.lng(), edge2End.lat()]);
+          const bearing2 = turf.bearing(point3, point4);
+          const angleTolerance = 1;
+          const areParallel = (Math.abs(bearing1 - bearing2) < angleTolerance);
+          console.log(`bearing1: ${bearing1}, bearing2: ${bearing2} are ${areParallel}`);
+          return areParallel;
+          // const vector1 = turf.getCoords(line1)[1].map((coord, index) => coord - turf.getCoords(line1)[0][index]);
+          // const vector2 = turf.getCoords(line2)[1].map((coord, index) => coord - turf.getCoords(line2)[0][index]);
+          // const dotProduct = vector1[0] * vector2[0] + vector1[1] * vector2[1];
+          // const magnitude1 = Math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1]);
+          // const magnitude2 = Math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1]);
+          // const angleInRadians = Math.acos(dotProduct / (magnitude1 * magnitude2));
+          // const angleInDegrees = angleInRadians * (180 / Math.PI);
+          // const angleTolerance = 1; // Adjust this value based on your needs
+          // const areParallel = Math.abs(angleInDegrees - 180) < angleTolerance;
+          // console.log(`angleInDegrees: ${angleInDegrees} are ${areParallel}`);
+          // return areParallel;
+          // const angle1 = turf.lineAngle(line1);
+          // const angle2 = turf.lineAngle(line2);
+          // const angleTolerance = 1; // Adjust this value based on your needs
+          // const areParallel = Math.abs(angle1 - angle2) < angleTolerance;
+          // console.log(`angle1: ${angle1}, angle2: ${angle2} are ${areParallel}`);
+          // return areParallel;
+          // const intersects = turf.lineIntersect(line1, line2);
+          // console.log(intersects.features);
+          // return intersects?.features?.length === 0;
+        }
+      }
+      return false;
+      // const heading1 = google.maps.geometry.spherical.computeHeading(edge1[0], edge1[1]);
+      // const heading2 = google.maps.geometry.spherical.computeHeading(edge2[0], edge2[1]);
+      // const tolerance = 1e-6;
+      // console.log('heading1', heading1)
+      // console.log('heading2', heading2)
+      // const check1 = Math.abs(heading1 - heading2);
+      // const check2 = Math.abs(heading1 - heading2 - 180);
+      // console.log('check1', check1)
+      // console.log('check2', check2);
+      // console.log('tolerance', tolerance);
+      // console.log('check1 < tolerance || check2 < tolerance', check1 < tolerance || check2 < tolerance);
+      // return check1 < tolerance || check2 < tolerance;
+    }
+
+    function findParallelEdges(path) {
+      console.log('path', path);
+      let parallelEdges = [];
+      for (let i = 0; i < path.getLength(); i++) {
+        const edge1Start = path.getAt(i);
+        const edge1End = path.getAt((i + 1) % path.getLength());
+        const edge1 = [edge1Start, edge1End];
+        for (let j = i + 1; j < path.getLength(); j++) {
+          if(((j + 1) % path.getLength()) !== 0) {
+            const edge2Start = path.getAt(j);
+            const edge2End = path.getAt((j + 1) % path.getLength());
+            console.log('i', i);
+            console.log('(i + 1) % path.getLength()', (i + 1) % path.getLength());
+            console.log('j', j);
+            console.log('(j + 1) % path.getLength()', (j + 1) % path.getLength());
+            const edge2 = [edge2Start, edge2End];
+            const areParallelEdges = areParallel(edge1, edge2);
+            console.log(`${i} and ${j} are parallel: ${areParallelEdges}`);
+            if (areParallelEdges) {
+              parallelEdges[i] = edge1;
+              parallelEdges[j] = edge2;
+            }
+          }
+        }
+      }
+      return parallelEdges;
     }
 
     function fillPolygonWithParallelReferenceLines(polygon, referenceLine, distance) {
@@ -824,6 +1015,7 @@
                 newPolygonCoordinates.push({lng: coord[0], lat: coord[1]});
               })
             }
+
             newPolygon = new google.maps.Polygon({
               paths: newPolygonCoordinates,
               map: map,
@@ -841,34 +1033,69 @@
 
             const path = newPolygon.getPath();
 
-            for (let i = 0; i < path.getLength(); i++) {
-              const segmentStart = path.getAt(i);
-              const segmentEnd = path.getAt((i + 1) % path.getLength());
-              const centerLatLng = new google.maps.LatLng(
-                (segmentStart.lat() + segmentEnd.lat()) / 2,
-                (segmentStart.lng() + segmentEnd.lng()) / 2
-              );
-
-              const distance = google.maps.geometry.spherical.computeDistanceBetween(segmentStart, segmentEnd);
-              let formattedDistance = '';
-              if (distance > 1000) {
-                formattedDistance = (distance / 1000).toFixed(2) + ' km';
-              } else {
-                formattedDistance = (distance).toFixed(2) + ' m';
-              }
-              if (distance !== 0) {
-                const marker = new google.maps.Marker({
-                  position: centerLatLng,
-                  map: map,
-                  icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
-                  label: {
-                    text: formattedDistance,
-                    color: 'white',
-                  },
-                });
-                markers[newPolygon.content].push(marker);
+            const parallelEdges = findParallelEdges(path);
+            if (parallelEdges.length) {
+              for (const edge of parallelEdges) {
+                if (edge) {
+                  const segmentStart = edge[0];
+                  const segmentEnd = edge[1];
+                  const lat = ((segmentStart.lat() + segmentEnd.lat()) / 2);
+                  const lng = ((segmentStart.lng() + segmentEnd.lng()) / 2);
+                  const centerLatLng = new google.maps.LatLng(lat, lng);
+                  const distance = google.maps.geometry.spherical.computeDistanceBetween(segmentStart, segmentEnd);
+                  let formattedDistance = '';
+                  if (distance > 1000) {
+                    formattedDistance = (distance / 1000).toFixed(2) + ' km';
+                  } else {
+                    formattedDistance = (distance).toFixed(2) + ' m';
+                  }
+                  if (
+                    distance !== 0
+                  ) {
+                    const marker = new google.maps.Marker({
+                      position: centerLatLng,
+                      map: map,
+                      icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
+                      label: {
+                        text: formattedDistance,
+                        color: 'white',
+                      },
+                    });
+                    markers[newPolygon.content].push(marker);
+                  }
+                }
               }
             }
+
+            // for (let i = 0; i < path.getLength(); i++) {
+            //   const segmentStart = path.getAt(i);
+            //   const segmentEnd = path.getAt((i + 1) % path.getLength());
+            //   const lat = ((segmentStart.lat() + segmentEnd.lat()) / 2);
+            //   const lng = ((segmentStart.lng() + segmentEnd.lng()) / 2);
+            //   const centerLatLng = new google.maps.LatLng(lat, lng);
+            //
+            //   const distance = google.maps.geometry.spherical.computeDistanceBetween(segmentStart, segmentEnd);
+            //   let formattedDistance = '';
+            //   if (distance > 1000) {
+            //     formattedDistance = (distance / 1000).toFixed(2) + ' km';
+            //   } else {
+            //     formattedDistance = (distance).toFixed(2) + ' m';
+            //   }
+            //   if (
+            //      distance !== 0
+            //   ) {
+            //     const marker = new google.maps.Marker({
+            //       position: centerLatLng,
+            //       map: map,
+            //       icon: 'https://faridjafarli.me/tasks/test-task/transp.png?v=2',
+            //       label: {
+            //         text: formattedDistance,
+            //         color: 'white',
+            //       },
+            //     });
+            //     markers[newPolygon.content].push(marker);
+            //   }
+            // }
 
             let area = google.maps.geometry.spherical.computeArea(newPolygon.getPath());
             let areaAcres = squareMetersToAcres(area).toFixed(2) + ' acres';
@@ -1225,6 +1452,20 @@
       });
 
       google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Shift') {
+          map.setTilt(0);
+          map.setOptions({ tilt: 0 });
+        }
+      });
+
+      document.addEventListener('keyup', (event) => {
+        if (event.key === 'Shift') {
+          map.setTilt(0);
+        }
+      });
+
       // google.maps.event.addListener(map, 'click', clearSelection);
       google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
 
@@ -1293,4 +1534,3 @@
     google.maps.event.addDomListener(window, 'load', initialize);
   });
 })(myApp);
-g
